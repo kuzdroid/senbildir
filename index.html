@@ -1,55 +1,223 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <title>SenBildir</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
-        .box {
-            background: rgba(0,0,0,0.4);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.5);
-        }
-        h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 18px;
-            opacity: 0.9;
-        }
-        .btn {
-            margin-top: 25px;
-            padding: 12px 25px;
-            background: #00c6ff;
-            color: black;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        .btn:hover {
-            background: #00ffd5;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>SenBildir</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ===== RESET ===== */
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+/* ===== BODY ===== */
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    color:white;
+    min-height:100vh;
+}
+
+/* ===== CONTAINER ===== */
+.container{
+    max-width:650px;
+    margin:auto;
+    padding:30px;
+}
+
+/* ===== HEADERS ===== */
+h1,h2{
+    text-align:center;
+    margin-bottom:15px;
+}
+
+/* ===== CARD ===== */
+.card{
+    background:rgba(0,0,0,0.45);
+    padding:25px;
+    border-radius:15px;
+    margin-top:20px;
+    box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+/* ===== INPUTS ===== */
+input,textarea,button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+}
+
+textarea{
+    min-height:140px;
+    resize:vertical;
+}
+
+input,textarea{
+    background:#111;
+    color:white;
+}
+
+/* ===== BUTTON ===== */
+button{
+    background:#00ffd5;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:0.85;
+}
+
+/* ===== STATUS ===== */
+#status{
+    margin-top:10px;
+    text-align:center;
+}
+
+/* ===== ADMIN ===== */
+.report{
+    background:rgba(255,255,255,0.1);
+    padding:15px;
+    border-radius:10px;
+    margin-top:10px;
+}
+
+small{
+    opacity:0.6;
+}
+
+/* ===== FOOTER ===== */
+footer{
+    text-align:center;
+    margin-top:40px;
+    opacity:0.6;
+    font-size:14px;
+}
+</style>
 </head>
+
 <body>
-    <div class="box">
-        <h1>senbildir.com</h1>
-        <p>Fikirlerini bildir, sesini duyur.</p>
-        <a class="btn" href="#">Yakında</a>
-    </div>
+
+<div class="container">
+
+<!-- ===== MAIN ===== -->
+<h1>senbildir.com</h1>
+<p style="text-align:center;opacity:.85">
+Anonim şikayet & geri bildirim sistemi
+</p>
+
+<div class="card">
+<h2>Bildirim Gönder</h2>
+
+<input id="title" placeholder="Başlık">
+<textarea id="message" placeholder="Mesajını yaz"></textarea>
+<button onclick="sendReport()">Gönder</button>
+
+<div id="status"></div>
+</div>
+
+<!-- ===== ADMIN ===== -->
+<div class="card">
+<h2>Admin Panel</h2>
+
+<input id="adminkey" placeholder="Admin Key">
+<button onclick="loadAdmin()">Giriş</button>
+
+<div id="adminList"></div>
+</div>
+
+<footer>
+© 2026 SenBildir • Render Hosting
+</footer>
+
+</div>
+
+<script>
+/* ===== SEND REPORT ===== */
+function sendReport(){
+    const title=document.getElementById("title").value;
+    const message=document.getElementById("message").value;
+    const status=document.getElementById("status");
+
+    if(title.trim()==="" || message.trim()===""){
+        status.innerText="❌ Boş alan bırakma";
+        return;
+    }
+
+    status.innerText="⏳ Gönderiliyor...";
+
+    fetch("/api/report",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+            title:title,
+            message:message
+        })
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        status.innerText=d.message;
+        document.getElementById("title").value="";
+        document.getElementById("message").value="";
+    })
+    .catch(()=>{
+        status.innerText="❌ Sunucu hatası";
+    });
+}
+
+/* ===== ADMIN LOAD ===== */
+function loadAdmin(){
+    const key=document.getElementById("adminkey").value;
+    const list=document.getElementById("adminList");
+
+    list.innerHTML="⏳ Yükleniyor...";
+
+    fetch("/api/admin?key="+key)
+    .then(r=>r.json())
+    .then(data=>{
+        if(data.length===0){
+            list.innerHTML="❌ Yetkisiz veya veri yok";
+            return;
+        }
+
+        list.innerHTML="";
+        data.forEach(x=>{
+            list.innerHTML+=`
+            <div class="report">
+                <b>${escapeHTML(x.title)}</b>
+                <p>${escapeHTML(x.text)}</p>
+                <small>${x.created}</small>
+            </div>
+            `;
+        });
+    })
+    .catch(()=>{
+        list.innerHTML="❌ Admin yüklenemedi";
+    });
+}
+
+/* ===== SECURITY ===== */
+function escapeHTML(str){
+    return str.replace(/[&<>"']/g,function(m){
+        return ({
+            "&":"&amp;",
+            "<":"&lt;",
+            ">":"&gt;",
+            '"':"&quot;",
+            "'":"&#39;"
+        })[m];
+    });
+}
+</script>
+
 </body>
 </html>
